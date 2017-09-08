@@ -6,11 +6,12 @@ from django.contrib.auth.models import User
 from django.utils.http import urlquote
 
 import requests
+from requests.utils import quote
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import viewsets
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, APIException
 
 
 from infobox.models import Property
@@ -39,8 +40,20 @@ def get_entity_info(request):
   if lang == '':
     raise ValidationError('A language must be specified (add lang parameter)', code=400)
 
-  return Response(request.data)
+  response = _get_wikidata_info(entity_id, lang)
+
+  if response.status_code == 200:
+    return Response(response.json().get('results').get('bindings'))
+
+  else:
+    raise APIException("Error on Wikidata API", response.status_code)
 
 
+
+
+def _get_wikidata_info(entity_id, lang):
+  query = "SELECT ?pLabel ?prop ?val WHERE { wd:Q" + entity_id + " ?prop ?val . ?ps wikibase:directClaim ?prop . ?ps rdfs:label ?pLabel . FILTER((LANG(?pLabel)) = '" + lang + "')}"
+
+  return requests.get("https://query.wikidata.org/sparql?format=json&query="+quote(query))
 
 
