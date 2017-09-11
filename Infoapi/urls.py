@@ -10,5 +10,5 @@ router.register(r'properties', views.PropertyViewSet)
 urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^entity/', views.get_entity_info)
+    url(r'^entity', views.get_entity_info)
 ]

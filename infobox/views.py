@@ -27,13 +27,13 @@ class PropertyViewSet(viewsets.ModelViewSet):
     serializer_class = PropertySerializer
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 def get_entity_info(request):
   """
   API endpoint to retrieve Wikidata information
   """
-  entity_id = request.data.get('id') or ''
-  lang = request.data.get('lang') or ''
+  entity_id = request.GET['id'] or ''
+  lang = request.GET['lang'] or ''
 
   if entity_id == '':
     raise ValidationError('An entity ID must be given (add id parameter)', code=400)
