@@ -40,13 +40,13 @@ def get_entity_info(request):
   if lang == '':
     raise ValidationError('A language must be specified (add lang parameter)', code=400)
 
-  response = _get_wikidata_info(entity_id, lang)
+  wikidata_info = _get_wikidata_info(entity_id, lang)
 
-  if response.status_code == 200:
-    return Response(response.json().get('results').get('bindings'))
+  if wikidata_info.status_code == 200:
+    return Response(wikidata_info.json().get('results').get('bindings'))
 
   else:
-    raise APIException("Error on Wikidata API", response.status_code)
+    raise APIException("Error on Wikidata API", wikidata_info.status_code)
 
 
 
@@ -56,4 +56,7 @@ def _get_wikidata_info(entity_id, lang):
 
   return requests.get("https://query.wikidata.org/sparql?format=json&query="+quote(query))
 
+def _get_label_and_description(entity_id, lang):
+  query = "SELECT ?label ?description WHERE { wd:Q" + entity_id + " rdfs:label ?label . wd:Q" + entity_id + " schema:description ?description. FILTER((LANG(?label)) = '" + lang + "' && (LANG(?description) = '" + lang + "'))}"
 
+  return requests.get("https://query.wikidata.org/sparql?format=json&query="+quote(query))
