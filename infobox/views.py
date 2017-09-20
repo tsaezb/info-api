@@ -55,15 +55,14 @@ def get_entity_info(request):
   if wikidata_headers.status_code != 200:
     raise APIException("Error on Wikidata API", wikidata_headers.status_code)
 
+  #add if , to manage empty results of wikidata request
+
   #baseline
   if strategy == 'baseline':
-    infobox['properties'] = _infobox_baseline(wikidata_info.json().get('results').get('bindings'), 10)
-    infobox['label']  = 'lab'
-    infobox['description']  = 'desc'
-  return Response(infobox)
-
-
-
+    infobox['properties'] = _infobox_baseline(wikidata_prop.json().get('results').get('bindings'), 10)
+    infobox['label']  = wikidata_headers.json()['results']['bindings'][0]['label']['value']
+    infobox['description']  = wikidata_headers.json()['results']['bindings'][0]['description']['value']
+    return Response(infobox)
 
 
 def _get_wikidata_info(entity_id, lang):
