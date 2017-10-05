@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render
-from django.contrib.auth.models import User
-from django.utils.http import urlquote
-
 import requests
 from requests.utils import quote
 
@@ -45,8 +41,9 @@ def get_entity_info(request):
     entity_id = request.GET['id'] or ''
     lang = request.GET['lang'] or ''
     strategy = request.GET['strategy'] or ''
+    size = 10
 
-    if strategy not in ['baseline']:
+    if strategy not in ['baseline', 'frecuency']:
         raise ValidationError('A valid strategy must be specified (or the parameter must not be used)', code=400)
     if entity_id == '':
         raise ValidationError('An entity ID must be given (add id parameter)', code=400)
@@ -64,10 +61,16 @@ def get_entity_info(request):
         raise APIException("Error on Wikidata API", wikidata_headers.status_code)
     # add if , to manage empty results of wikidata request
     # baseline
+
+    infobox['label'] = wikidata_headers.json()['results']['bindings'][0]['label']['value']
+    infobox['description'] = wikidata_headers.json()['results']['bindings'][0]['description']['value']
+
     if strategy == 'baseline':
-        infobox['properties'] = _infobox_baseline(wikidata_prop.json().get('results').get('bindings'), 10)
-        infobox['label']  = wikidata_headers.json()['results']['bindings'][0]['label']['value']
-        infobox['description']  = wikidata_headers.json()['results']['bindings'][0]['description']['value']
+        infobox['properties'] = _infobox_baseline(wikidata_prop.json().get('results').get('bindings'), size)
+
+    elif strategy == 'frecuency':
+        infobox['properties'] = _infobox_frecuency_count(wikidata_prop.json().get('results').get('bindings'), size)
+
     return Response(infobox)
 
 
@@ -85,3 +88,9 @@ def _get_label_and_description(entity_id, lang):
 def _infobox_baseline(prop, n):
     random.shuffle(prop)
     return prop[:n]
+
+
+def _infobox_frecuency_count(prop, n):
+    for p in prop:
+        p['prop']['frecuency'] = Property.objects.get(identifier=p.get('prop').get('value')).get_frecuency()
+    return sorted(prop, key=lambda x: x.get('prop').get('frecuency'), reverse=True)[:n]
