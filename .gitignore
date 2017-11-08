@@ -1,5 +1,5 @@
 #fixtures
-Infoapi/fixtures/*
+Infoapi/fixtures/pageRank*.json
 
 #migrations & DB
 infobox/migrations/
