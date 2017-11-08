@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.core.exceptions import ObjectDoesNotExist
+
 import requests
 from requests.utils import quote
 
@@ -11,7 +13,7 @@ from rest_framework.exceptions import ValidationError, APIException
 
 import random
 
-from infobox.models import Property
+from infobox.models import Property, PageRank
 from infobox.serializers import PropertySerializer
 
 
@@ -24,16 +26,6 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-def update_frecuency_count(request):
-    _get_frecuency_count()
-
-
-def _get_frecuency_count():
-    query = "SELECT ?p (count(*) AS ?count) WHERE { ?s ?p ?o. } GROUP BY ?p ORDER BY DESC(?count)"
-    return requests.get("https://query.wikidata.org/sparql?format=json&query="+quote(query))
-
-
-@api_view(['GET'])
 def get_entity_info(request):
     """
     API endpoint to retrieve Wikidata information
@@ -43,7 +35,7 @@ def get_entity_info(request):
     strategy = request.GET['strategy'] or ''
     size = 10
 
-    if strategy not in ['baseline', 'frecuency']:
+    if strategy not in ['baseline', 'frecuency', 'pagerank', 'multiplicative']:
         raise ValidationError('A valid strategy must be specified (or the parameter must not be used)', code=400)
     if entity_id == '':
         raise ValidationError('An entity ID must be given (add id parameter)', code=400)
@@ -71,6 +63,13 @@ def get_entity_info(request):
     elif strategy == 'frecuency':
         infobox['properties'] = _infobox_frecuency_count(wikidata_prop.json().get('results').get('bindings'), size)
 
+    elif strategy == 'pagerank':
+        infobox['properties'] = _infobox_page_rank(wikidata_prop.json().get('results').get('bindings'), size)
+
+    elif strategy == 'multiplicative':
+        infobox['properties'] = _infobox_multiplicative(wikidata_prop.json().get('results').get('bindings'), size)
+
+
     return Response(infobox)
 
 
@@ -92,5 +91,50 @@ def _infobox_baseline(prop, n):
 
 def _infobox_frecuency_count(prop, n):
     for p in prop:
-        p['prop']['frecuency'] = Property.objects.get(identifier=p.get('prop').get('value')).get_frecuency()
+        p['prop']['frecuency'] = _get_frecuency_count(p.get('prop').get('value'))
     return sorted(prop, key=lambda x: x.get('prop').get('frecuency'), reverse=True)[:n]
+
+
+def _infobox_page_rank(prop, n):
+    for p in prop:
+
+        if p.get('val').get('type') == 'uri' and '/entity/Q' in p.get('val').get('value'):
+            q_code = p.get('val').get('value')
+            q_code = q_code.split('/entity/Q')[1]
+            p['val']['rank'] = _get_pagerank(q_code)
+        else:
+            p['val']['rank'] = 0
+    return sorted(prop, key=lambda x: x.get('val').get('rank'), reverse=True)[:n]
+
+
+def _infobox_multiplicative(prop, n):
+    for p in prop:
+        p['prop']['frecuency'] = _get_frecuency_count(p.get('prop').get('value'))
+
+        if p.get('val').get('type') == 'uri' and '/entity/Q' in p.get('val').get('value'):
+            q_code = p.get('val').get('value')
+            q_code = q_code.split('/entity/Q')[1]
+            p['val']['rank'] = _get_pagerank(q_code)
+        else:
+            p['val']['rank'] = 0
+    return sorted(prop, key=lambda x: x.get('val').get('rank') * x.get('prop').get('frecuency'), reverse=True)[:n]
+
+
+def _get_frecuency_count(val):
+    value = 0
+    try:
+        frecuency = Property.objects.get(identifier=val)
+        value = frecuency.get_frecuency()
+    except ObjectDoesNotExist:
+        value = 0
+    return value
+
+
+def _get_pagerank(val):
+    value = 0
+    try:
+        ranking = PageRank.objects.get(entity=val)
+        value = ranking.get_page_rank()
+    except ObjectDoesNotExist:
+        value = 0
+    return value
