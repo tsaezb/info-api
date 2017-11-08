@@ -13,6 +13,8 @@ from rest_framework.exceptions import ValidationError, APIException
 
 import random
 
+from decimal import Decimal
+
 from infobox.models import Property, PageRank
 from infobox.serializers import PropertySerializer
 
@@ -69,12 +71,14 @@ def get_entity_info(request):
     elif strategy == 'multiplicative':
         infobox['properties'] = _infobox_multiplicative(wikidata_prop.json().get('results').get('bindings'), size)
 
-
     return Response(infobox)
 
 
 def _get_wikidata_info(entity_id, lang):
-    query = "SELECT ?pLabel ?prop ?val WHERE { wd:Q" + entity_id + " ?prop ?val . ?ps wikibase:directClaim ?prop . ?ps rdfs:label ?pLabel . FILTER((LANG(?pLabel)) = '" + lang + "')}"
+    # query = "SELECT ?pLabel ?prop ?val WHERE { wd:Q" + entity_id + " ?prop ?val . ?ps wikibase:directClaim ?prop . ?ps rdfs:label ?pLabel . FILTER((LANG(?pLabel)) = '" + lang + "')}"
+
+    query = "SELECT ?pLabel ?prop ?val ?valLabel WHERE { wd:Q" + entity_id + " ?prop ?val . ?ps wikibase:directClaim ?prop . ?ps rdfs:label ?pLabel . SERVICE wikibase:label { bd:serviceParam wikibase:language '" + lang + "'. } FILTER((LANG(?pLabel)) = '" + lang + "')}"
+
     return requests.get("https://query.wikidata.org/sparql?format=json&query="+quote(query))
 
 
@@ -92,6 +96,7 @@ def _infobox_baseline(prop, n):
 def _infobox_frecuency_count(prop, n):
     for p in prop:
         p['prop']['frecuency'] = _get_frecuency_count(p.get('prop').get('value'))
+        # p['prop']['norm_frecuency'] = _frecuency_count_normalization(p['prop']['frecuency'])
     return sorted(prop, key=lambda x: x.get('prop').get('frecuency'), reverse=True)[:n]
 
 
@@ -104,6 +109,9 @@ def _infobox_page_rank(prop, n):
             p['val']['rank'] = _get_pagerank(q_code)
         else:
             p['val']['rank'] = 0
+
+        p['val']['norm_rank'] = _pagerank_normalization(p['val']['rank'])
+
     return sorted(prop, key=lambda x: x.get('val').get('rank'), reverse=True)[:n]
 
 
@@ -117,7 +125,12 @@ def _infobox_multiplicative(prop, n):
             p['val']['rank'] = _get_pagerank(q_code)
         else:
             p['val']['rank'] = 0
-    return sorted(prop, key=lambda x: x.get('val').get('rank') * x.get('prop').get('frecuency'), reverse=True)[:n]
+
+        p['val']['norm_rank'] = _pagerank_normalization(p['val']['rank'])
+        p['prop']['norm_frecuency'] = _frecuency_count_normalization(p['prop']['frecuency'])
+
+        p['score'] = p['val']['norm_rank'] * Decimal(p['prop']['norm_frecuency'])
+    return sorted(prop, key=lambda x: x.get('score'), reverse=True)[:n]
 
 
 def _get_frecuency_count(val):
@@ -138,3 +151,15 @@ def _get_pagerank(val):
     except ObjectDoesNotExist:
         value = 0
     return value
+
+
+def _frecuency_count_normalization(n):
+    max_val = 941678168
+    min_val = 0
+    return (float)(n - min_val)/(max_val - min_val)
+
+
+def _pagerank_normalization(n):
+    max_val = Decimal(0.04088949929711902659)
+    min_val = Decimal(0)
+    return (n - min_val)/(max_val - min_val)

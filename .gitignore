@@ -1,3 +1,6 @@
+#fixtures
+Infoapi/fixtures/*
+
 #migrations & DB
 infobox/migrations/
 db.sqlite3
