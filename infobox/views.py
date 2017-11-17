@@ -55,7 +55,9 @@ def get_entity_info(request):
         raise APIException("Error on Wikidata API", wikidata_headers.status_code)
 
     infobox['label'] = wikidata_headers.json()['results']['bindings'][0]['label']['value']
-    infobox['description'] = wikidata_headers.json()['results']['bindings'][0]['description']['value']
+
+    if 'description' in wikidata_headers.json()['results']['bindings'][0].keys():
+        infobox['description'] = wikidata_headers.json()['results']['bindings'][0]['description']['value']
 
     if 'picture' in wikidata_headers.json()['results']['bindings'][0].keys():
         infobox['image'] = wikidata_headers.json()['results']['bindings'][0]['picture']['value']
