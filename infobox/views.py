@@ -37,7 +37,7 @@ def get_entity_info(request):
     strategy = request.GET['strategy'] or ''
     size = 10
 
-    if strategy not in ['baseline', 'frecuency', 'pagerank', 'multiplicative']:
+    if strategy not in ['baseline', 'frecuency', 'pagerank', 'multiplicative', 'sum']:
         raise ValidationError('A valid strategy must be specified (or the parameter must not be used)', code=400)
     if entity_id == '':
         raise ValidationError('An entity ID must be given (add id parameter)', code=400)
@@ -70,6 +70,9 @@ def get_entity_info(request):
 
     elif strategy == 'multiplicative':
         infobox['properties'] = _infobox_multiplicative(wikidata_prop.json().get('results').get('bindings'), size)
+
+    elif strategy == 'sum':
+        infobox['properties'] = _infobox_sum(wikidata_prop.json().get('results').get('bindings'), size)
 
     return Response(infobox)
 
@@ -130,6 +133,24 @@ def _infobox_multiplicative(prop, n):
         p['prop']['norm_frecuency'] = _frecuency_count_normalization(p['prop']['frecuency'])
 
         p['score'] = p['val']['norm_rank'] * Decimal(p['prop']['norm_frecuency'])
+    return sorted(prop, key=lambda x: x.get('score'), reverse=True)[:n]
+
+
+def _infobox_sum(prop, n):
+    for p in prop:
+        p['prop']['frecuency'] = _get_frecuency_count(p.get('prop').get('value'))
+
+        if p.get('val').get('type') == 'uri' and '/entity/Q' in p.get('val').get('value'):
+            q_code = p.get('val').get('value')
+            q_code = q_code.split('/entity/Q')[1]
+            p['val']['rank'] = _get_pagerank(q_code)
+        else:
+            p['val']['rank'] = 0
+
+        p['val']['norm_rank'] = _pagerank_normalization(p['val']['rank'])
+        p['prop']['norm_frecuency'] = _frecuency_count_normalization(p['prop']['frecuency'])
+
+        p['score'] = p['val']['norm_rank'] + Decimal(p['prop']['norm_frecuency'])
     return sorted(prop, key=lambda x: x.get('score'), reverse=True)[:n]
 
 
