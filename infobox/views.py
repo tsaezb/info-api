@@ -48,8 +48,6 @@ def get_entity_info(request):
     wikidata_prop = _get_wikidata_info(entity_id, lang)
     wikidata_headers = _get_headers(entity_id, lang)
 
-    print wikidata_headers.json()
-
     if wikidata_prop.status_code != 200:
         raise APIException("Error on Wikidata API", wikidata_prop.status_code)
 
