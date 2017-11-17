@@ -35,7 +35,7 @@ def get_entity_info(request):
     entity_id = request.GET['id'] or ''
     lang = request.GET['lang'] or ''
     strategy = request.GET['strategy'] or ''
-    size = 10
+    size = 25
 
     if strategy not in ['baseline', 'frecuency', 'pagerank', 'multiplicative', 'sum']:
         raise ValidationError('A valid strategy must be specified (or the parameter must not be used)', code=400)
