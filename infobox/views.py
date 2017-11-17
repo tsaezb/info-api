@@ -53,12 +53,12 @@ def get_entity_info(request):
 
     if wikidata_headers.status_code != 200:
         raise APIException("Error on Wikidata API", wikidata_headers.status_code)
-    # add if , to manage empty results of wikidata request
-    # baseline
 
     infobox['label'] = wikidata_headers.json()['results']['bindings'][0]['label']['value']
     infobox['description'] = wikidata_headers.json()['results']['bindings'][0]['description']['value']
-    infobox['image'] = wikidata_headers.json()['results']['bindings'][0]['picture']['value']
+
+    if 'picture' in wikidata_headers.json()['results']['bindings'][0].keys():
+        infobox['image'] = wikidata_headers.json()['results']['bindings'][0]['picture']['value']
 
     if strategy == 'baseline':
         infobox['properties'] = _infobox_baseline(wikidata_prop.json().get('results').get('bindings'), size)
@@ -87,7 +87,7 @@ def _get_wikidata_info(entity_id, lang):
 
 
 def _get_headers(entity_id, lang):
-    query = "SELECT ?label ?description ?picture WHERE { wd:Q" + entity_id + " rdfs:label ?label . wd:Q" + entity_id + " schema:description ?description. wd:Q" + entity_id + " wdt:P18 ?picture . FILTER((LANG(?label)) = '" + lang + "' && (LANG(?description) = '" + lang + "'))} LIMIT 1"
+    query = "SELECT ?label ?description ?picture WHERE { wd:Q" + entity_id + " rdfs:label ?label . wd:Q" + entity_id + " schema:description ?description. OPTIONAL { wd:Q" + entity_id + " wdt:P18 ?picture } OPTIONAL {wd:Q" + entity_id + " wdt:P41 ?picture } FILTER((LANG(?label)) = '" + lang + "' && (LANG(?description) = '" + lang + "'))} LIMIT 1"
 
     return requests.get("https://query.wikidata.org/sparql?format=json&query="+quote(query))
 
