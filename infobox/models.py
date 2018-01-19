@@ -5,7 +5,7 @@ from django.db import models
 
 
 class Property(models.Model):
-    identifier = models.CharField(max_length=50)
+    identifier = models.CharField(max_length=1024)
     frecuency = models.PositiveIntegerField()
 
     def get_frecuency(self):
@@ -13,7 +13,7 @@ class Property(models.Model):
 
 
 class PageRank(models.Model):
-    entity = models.CharField(max_length=50, db_index=True)
+    entity = models.CharField(max_length=1024, db_index=True)
     page_rank = models.DecimalField(max_digits=25, decimal_places=20)
 
     def get_page_rank(self):

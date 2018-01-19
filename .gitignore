@@ -7,6 +7,9 @@ Infoapi/fixtures/pageRank*.json
 #dj_static
 /dj_static
 
+#systerm files
+.DS_Store
+
 #migrations & DB
 db.sqlite3
 
