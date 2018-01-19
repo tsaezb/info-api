@@ -29,8 +29,8 @@ def upload_config(file_):
 def production(tag):
     env.name = 'production'
     env.type = 'production'
-    env.hosts = ['sar.dcc.uchile.cl:552']
-    env.user = 'coms'
+    env.hosts = ['34.209.1.113']
+    env.user = 'wikibox'
     set_env_vars(tag)
 
 
@@ -59,9 +59,9 @@ def deploy():
     repo_update()
     repo_activate_version()
     install_dependencies()
-    django_migrate_db()
-    uwsgi_config()
-    create_symlinks()
+    #django_migrate_db()
+    #uwsgi_config()
+    #create_symlinks()
 
 
 def prepare_environment():
