@@ -59,7 +59,7 @@ def deploy():
     repo_update()
     repo_activate_version()
     install_dependencies()
-    #django_migrate_db()
+    django_migrate_db()
     #uwsgi_config()
     #create_symlinks()
 

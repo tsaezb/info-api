@@ -5,7 +5,6 @@ Infoapi/fixtures/pageRank*.json
 /Infoapi/settings/local.py
 
 #migrations & DB
-infobox/migrations/
 db.sqlite3
 
 # Byte-compiled / optimized / DLL files

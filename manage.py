@@ -2,7 +2,11 @@
 import os
 import sys
 
+from Infoapi.libs import load_env_params
+
+
 if __name__ == "__main__":
+    load_env_params()
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Infoapi.settings.local")
     try:
         from django.core.management import execute_from_command_line

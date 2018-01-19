@@ -9,7 +9,11 @@ https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/
 
 import os
 
+from Infoapi.libs import load_env_params
+
 from django.core.wsgi import get_wsgi_application
+
+load_env_params()
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Infoapi.settings.local")
 
