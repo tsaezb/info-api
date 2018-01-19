@@ -1,6 +1,9 @@
 #fixtures
 Infoapi/fixtures/pageRank*.json
 
+#local settings
+/Infoapi/settings/local.py
+
 #migrations & DB
 infobox/migrations/
 db.sqlite3
