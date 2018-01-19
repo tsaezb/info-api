@@ -60,8 +60,9 @@ def deploy():
     repo_activate_version()
     install_dependencies()
     django_migrate_db()
-    #uwsgi_config()
-    #create_symlinks()
+    django_collect_static()
+    uwsgi_config()
+    create_symlinks()
 
 
 def prepare_environment():
@@ -112,6 +113,12 @@ def django_migrate_db():
         run('{0:s}/bin/python manage.py migrate'.format(env.python_env_path))
 
 
+def django_collect_static():
+    print(yellow('\nDjango collect static'))
+    with shell_env(ENV=env.name), cd(env.git_repo_path):
+        run('{0:s}/bin/python manage.py collectstatic --noinput'.format(env.python_env_path))
+
+
 def create_symlinks():
     print(yellow('\nCreate symlinks'))
     with cd(env.home):
@@ -142,11 +149,11 @@ def uwsgi_config():
 
 
 def restart():
-    uwsgi_stop()
-    uwsgi_start()
+    stop()
+    start()
 
 
-def uwsgi_start():
+def start():
     print(yellow('\nStart uWSGI'))
     run(
         'while [ -f {0:s}/uwsgi/uwsgi_{2:s}.pid ]; do sleep 1; done && {0:s}/deploys/current/env/bin/uwsgi --ini {1:s}'.format(
@@ -157,7 +164,7 @@ def uwsgi_start():
     )
 
 
-def uwsgi_stop():
+def stop():
     print(yellow('\nStop uWSGI'))
     run(
         '(test -f {0:s}/uwsgi/uwsgi_{1:s}.pid && kill -SIGINT `cat {0:s}/uwsgi/uwsgi_{1:s}.pid`) || true'.format(

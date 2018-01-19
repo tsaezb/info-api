@@ -4,6 +4,9 @@ Infoapi/fixtures/pageRank*.json
 #local settings
 /Infoapi/settings/local.py
 
+#dj_static
+/dj_static
+
 #migrations & DB
 db.sqlite3
 
